@@ -1,0 +1,42 @@
+name: Construire l'APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Créer le projet Android
+        run: flutter create --org sn.lfakebemer --project-name groupeagricole --platforms android --no-pub app_build
+
+      - name: Copier le code de l'application
+        run: |
+          rm -rf app_build/lib app_build/test
+          cp -r lib app_build/lib
+          cp pubspec.yaml app_build/pubspec.yaml
+          python3 scripts/prepare.py
+
+      - name: Construire l'APK
+        working-directory: app_build
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: groupe-agricole-apk
+          path: app_build/build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "649407800086",
+    "project_id": "lfarm-1e4fe",
+    "storage_bucket": "lfarm-1e4fe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:649407800086:android:da32acf9c08611c6e7e637",
+        "android_client_info": {
+          "package_name": "sn.lfakebemer.groupeagricole"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7yec1pUnUkFDpRhsQClLckXE9CdTX7sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
