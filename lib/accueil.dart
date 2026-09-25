@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'admin.dart';
+import 'contenus.dart';
 import 'fiche.dart';
 import 'outils.dart';
 import 'planning.dart';
@@ -166,6 +167,26 @@ class Accueil extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Raccourci(
+                      icone: Icons.newspaper_outlined,
+                      titre: 'Actualités',
+                      page: const ListeActualites(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _Raccourci(
+                      icone: Icons.menu_book_outlined,
+                      titre: 'Leçons',
+                      page: const ListeLecons(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               if (docs.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(24),
@@ -222,6 +243,35 @@ class BandeauMiseAJour extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _Raccourci extends StatelessWidget {
+  const _Raccourci(
+      {required this.icone, required this.titre, required this.page});
+  final IconData icone;
+  final String titre;
+  final Widget page;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          child: Row(
+            children: [
+              Icon(icone),
+              const SizedBox(width: 8),
+              Expanded(child: Text(titre)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
