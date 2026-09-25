@@ -55,6 +55,9 @@ if kts.exists():
     t = t.replace("    buildTypes {", signature, 1)
     t = t.replace('signingConfig = signingConfigs.getByName("debug")',
                   'signingConfig = signingConfigs.getByName("release")')
+    t = t.replace("compileOptions {",
+                  "compileOptions {\n        isCoreLibraryDesugaringEnabled = true", 1)
+    t += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
     kts.write_text(t, encoding="utf-8")
 else:
     groovy = APP / "android" / "app" / "build.gradle"
@@ -72,6 +75,9 @@ else:
     buildTypes {'''
     t = t.replace("    buildTypes {", signature, 1)
     t = t.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
+    t = t.replace("compileOptions {",
+                  "compileOptions {\n        coreLibraryDesugaringEnabled true", 1)
+    t += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n"
     groovy.write_text(t, encoding="utf-8")
 
 if "signingConfigs.getByName(\"release\")" not in t and "signingConfigs.release" not in t:
@@ -91,6 +97,28 @@ lien = '''        <intent>
     </queries>'''
 if "</queries>" in t and 'android:scheme="https"' not in t:
     t = t.replace("    </queries>", lien, 1)
+permissions = [
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.RECEIVE_BOOT_COMPLETED",
+    "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+    "android.permission.VIBRATE",
+]
+for perm in permissions:
+    if perm not in t:
+        t = re.sub(r"(<manifest[^>]*>)",
+                   r'\1\n    <uses-permission android:name="' + perm + '"/>', t, count=1)
+recepteurs = """        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+    </application>"""
+if "ScheduledNotificationReceiver" not in t:
+    t = t.replace("    </application>", recepteurs, 1)
 t = t.replace('android:label="groupeagricole"', 'android:label="Groupe Agricole"')
 manifeste.write_text(t, encoding="utf-8")
 

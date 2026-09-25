@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'accueil.dart';
 import 'admin.dart';
 import 'firebase_options.dart';
+import 'notifs.dart';
 import 'outils.dart';
 
 Future<void> main() async {
@@ -17,6 +18,7 @@ Future<void> main() async {
     versionLocale = int.tryParse(info.buildNumber) ?? 0;
     versionNom = info.version;
   } catch (_) {}
+  await initNotifications();
   runApp(const GroupeAgricoleApp());
 }
 
@@ -68,6 +70,7 @@ class _DemarrageState extends State<Demarrage> {
         _nom = prefs.getString('nom');
         _pret = true;
       });
+      if (!estAdmin.value) abonner(_nom);
     } catch (_) {
       if (!mounted) return;
       setState(() => _erreur =
@@ -82,6 +85,8 @@ class _DemarrageState extends State<Demarrage> {
     } else {
       await prefs.setString('nom', nom);
     }
+    abonner(nom);
+    if (nom == null) annulerRappels();
     if (!mounted) return;
     setState(() => _nom = nom);
   }

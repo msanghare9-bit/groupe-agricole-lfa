@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'admin.dart';
 import 'fiche.dart';
 import 'outils.dart';
+import 'planning.dart';
 
 class Accueil extends StatelessWidget {
   const Accueil({super.key, required this.nom, required this.onChangerNom});
@@ -38,6 +39,16 @@ class Accueil extends StatelessWidget {
         page = const JournalArrosages();
       case 'maj':
         page = const PublierMiseAJour();
+      case 'planning':
+        page = PagePlanning(nom: nom);
+      case 'binomes':
+        page = const GestionBinomes();
+      case 'demandes':
+        page = const DemandesRemplacement();
+      case 'annonce':
+        page = const EnvoyerAnnonce();
+      case 'reglages':
+        page = const ReglagesPlanning();
       case 'deconnexion':
         _deconnecter(context);
         return;
@@ -59,6 +70,17 @@ class Accueil extends StatelessWidget {
             onSelected: (c) => _menu(context, c),
             itemBuilder: (_) => admin
                 ? const [
+                    PopupMenuItem(
+                        value: 'planning', child: Text('Emploi du temps')),
+                    PopupMenuItem(value: 'binomes', child: Text('Binômes')),
+                    PopupMenuItem(
+                        value: 'demandes',
+                        child: Text('Demandes de remplacement')),
+                    PopupMenuItem(
+                        value: 'annonce', child: Text('Annonce au groupe')),
+                    PopupMenuItem(
+                        value: 'reglages',
+                        child: Text('Réglages du planning')),
                     PopupMenuItem(value: 'eleves', child: Text('Élèves')),
                     PopupMenuItem(
                         value: 'journal', child: Text('Journal des arrosages')),
@@ -68,6 +90,8 @@ class Accueil extends StatelessWidget {
                         value: 'deconnexion', child: Text('Se déconnecter')),
                   ]
                 : const [
+                    PopupMenuItem(
+                        value: 'planning', child: Text('Emploi du temps')),
                     PopupMenuItem(value: 'nom', child: Text("Changer d'élève")),
                     PopupMenuItem(
                         value: 'connexion', child: Text('Espace responsable')),
@@ -98,6 +122,9 @@ class Accueil extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             children: [
               const BandeauMiseAJour(),
+              const BandeauAnnonce(),
+              if (!admin) ProchainTour(nom: nom),
+              const SizedBox(height: 8),
               Text(admin ? 'Espace responsable' : 'Bonjour $nom',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),

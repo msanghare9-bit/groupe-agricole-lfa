@@ -1,0 +1,22 @@
+name: Envoyer les notifications
+
+on:
+  schedule:
+    # Toutes les 30 minutes, de 6 h à 21 h 30 (heure du Sénégal)
+    - cron: '*/30 6-21 * * *'
+  workflow_dispatch:
+
+jobs:
+  envoyer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q google-auth requests
+      - name: Envoyer
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: python3 scripts/envoyer_notifications.py
