@@ -123,3 +123,14 @@ t = t.replace('android:label="groupeagricole"', 'android:label="Groupe Agricole"
 manifeste.write_text(t, encoding="utf-8")
 
 print("Préparation terminée.")
+
+# --- Icône de l'application (logo LFARM) ---
+import shutil
+icones = RACINE / "assets" / "icone"
+res = APP / "android" / "app" / "src" / "main" / "res"
+for densite in ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]:
+    source = icones / f"ic_launcher_{densite}.png"
+    dossier = res / f"mipmap-{densite}"
+    if source.exists() and dossier.exists():
+        shutil.copy(source, dossier / "ic_launcher.png")
+print("Icône installée.")
