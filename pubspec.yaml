@@ -19,7 +19,6 @@ dependencies:
   firebase_messaging: any
   flutter_local_notifications: ^19.0.0
   timezone: ^0.10.0
-  permission_handler: any
 
 flutter:
   uses-material-design: true

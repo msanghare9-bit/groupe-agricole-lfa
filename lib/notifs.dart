@@ -1,7 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -83,11 +82,12 @@ Future<void> demanderAutorisations(BuildContext context) async {
     builder: (ctx) => AlertDialog(
       title: const Text("Rappels d'arrosage"),
       content: const Text(
-        "Pour recevoir les rappels de ton tour, autorise les notifications, "
-        "puis laisse l'application fonctionner sans restriction de batterie.\n\n"
-        "Sur certains téléphones (Tecno, Infinix, Itel), va aussi dans "
-        "Paramètres > Applications > Groupe Agricole > Batterie et choisis "
-        "« Aucune restriction ».",
+        "Pour recevoir les rappels de ton tour, autorise les notifications "
+        "à l'écran suivant.\n\n"
+        "Ensuite, va dans Paramètres > Applications > Groupe Agricole > "
+        "Batterie et choisis « Aucune restriction ». Sur les téléphones "
+        "Tecno, Infinix et Itel, c'est indispensable pour que les rappels "
+        "arrivent.",
       ),
       actions: [
         FilledButton(
@@ -98,8 +98,10 @@ Future<void> demanderAutorisations(BuildContext context) async {
     ),
   );
   try {
-    await Permission.notification.request();
-    await Permission.ignoreBatteryOptimizations.request();
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   } catch (_) {}
   await prefs.setBool('autorisations', true);
 }
