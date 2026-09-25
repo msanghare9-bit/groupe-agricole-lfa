@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'notifs.dart';
 import 'outils.dart';
 
 // ---------- Connexion du responsable ----------
@@ -26,6 +27,7 @@ class _ConnexionResponsableState extends State<ConnexionResponsable> {
         password: _mdp.text,
       );
       estAdmin.value = true;
+      abonner(null);
       if (mounted) Navigator.pop(context);
     } catch (_) {
       if (mounted) {

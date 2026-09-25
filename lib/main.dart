@@ -70,7 +70,10 @@ class _DemarrageState extends State<Demarrage> {
         _nom = prefs.getString('nom');
         _pret = true;
       });
-      if (!estAdmin.value) abonner(_nom);
+      abonner(estAdmin.value ? null : _nom);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) demanderAutorisations(context);
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _erreur =
