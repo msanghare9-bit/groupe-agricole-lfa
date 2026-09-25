@@ -1,7 +1,8 @@
 """Prépare le projet Android avant la compilation.
 
 Lit google-services.json (à la racine du dépôt), génère lib/firebase_options.dart
-et ajuste la configuration Android (version minimale, permission internet, nom).
+et ajuste la configuration Android : version minimale, permissions, nom,
+et signature permanente (clé fournie par les secrets GitHub).
 """
 import json
 import pathlib
@@ -36,20 +37,60 @@ const firebaseOptions = FirebaseOptions(
 """
 (APP / "lib" / "firebase_options.dart").write_text(options, encoding="utf-8")
 
-gradle = APP / "android" / "app" / "build.gradle.kts"
-if not gradle.exists():
-    gradle = APP / "android" / "app" / "build.gradle"
-t = gradle.read_text(encoding="utf-8")
-t = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", t)
-t = re.sub(r"minSdkVersion\s+flutter\.minSdkVersion", "minSdkVersion 24", t)
-gradle.write_text(t, encoding="utf-8")
+# --- Gradle : version minimale et signature ---
+kts = APP / "android" / "app" / "build.gradle.kts"
+if kts.exists():
+    t = kts.read_text(encoding="utf-8")
+    t = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", t)
+    signature = '''    signingConfigs {
+        create("release") {
+            storeFile = file("upload.jks")
+            storePassword = System.getenv("KS_PASS")
+            keyAlias = "groupeagricole"
+            keyPassword = System.getenv("KS_PASS")
+        }
+    }
 
+    buildTypes {'''
+    t = t.replace("    buildTypes {", signature, 1)
+    t = t.replace('signingConfig = signingConfigs.getByName("debug")',
+                  'signingConfig = signingConfigs.getByName("release")')
+    kts.write_text(t, encoding="utf-8")
+else:
+    groovy = APP / "android" / "app" / "build.gradle"
+    t = groovy.read_text(encoding="utf-8")
+    t = re.sub(r"minSdkVersion\s+flutter\.minSdkVersion", "minSdkVersion 24", t)
+    signature = '''    signingConfigs {
+        release {
+            storeFile file("upload.jks")
+            storePassword System.getenv("KS_PASS")
+            keyAlias "groupeagricole"
+            keyPassword System.getenv("KS_PASS")
+        }
+    }
+
+    buildTypes {'''
+    t = t.replace("    buildTypes {", signature, 1)
+    t = t.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
+    groovy.write_text(t, encoding="utf-8")
+
+if "signingConfigs.getByName(\"release\")" not in t and "signingConfigs.release" not in t:
+    sys.exit("ERREUR : impossible de configurer la signature.")
+
+# --- Manifeste : internet, ouverture des liens, nom ---
 manifeste = APP / "android" / "app" / "src" / "main" / "AndroidManifest.xml"
 t = manifeste.read_text(encoding="utf-8")
 if "android.permission.INTERNET" not in t:
     t = re.sub(r"(<manifest[^>]*>)",
                r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
                t, count=1)
+lien = '''        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>'''
+if "</queries>" in t and 'android:scheme="https"' not in t:
+    t = t.replace("    </queries>", lien, 1)
 t = t.replace('android:label="groupeagricole"', 'android:label="Groupe Agricole"')
 manifeste.write_text(t, encoding="utf-8")
 

@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,11 +33,31 @@ jobs:
           cp pubspec.yaml app_build/pubspec.yaml
           python3 scripts/prepare.py
 
+      - name: Préparer la signature
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > app_build/android/app/upload.jks
+
       - name: Construire l'APK
         working-directory: app_build
+        env:
+          KS_PASS: ${{ secrets.KS_PASS }}
         run: |
-          flutter pub get
-          flutter build apk --release
+          set -o pipefail
+          flutter pub get 2>&1 | tee ../build.log
+          flutter build apk --release 2>&1 | tee -a ../build.log
+
+      - name: Enregistrer le journal en cas d'erreur
+        if: failure()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan journaux
+          git rm -rfq --cached .
+          tail -n 300 build.log > erreur.log || echo "pas de journal" > erreur.log
+          git add erreur.log
+          git commit -qm "Journal d'erreur"
+          git push -f origin journaux
 
       - uses: actions/upload-artifact@v4
         with:
