@@ -49,6 +49,8 @@ class Accueil extends StatelessWidget {
         page = const EnvoyerAnnonce();
       case 'reglages':
         page = const ReglagesPlanning();
+      case 'remarques':
+        page = const ToutesRemarques();
       case 'deconnexion':
         _deconnecter(context);
         return;
@@ -81,6 +83,9 @@ class Accueil extends StatelessWidget {
                     PopupMenuItem(
                         value: 'reglages',
                         child: Text('Réglages du planning')),
+                    PopupMenuItem(
+                        value: 'remarques',
+                        child: Text('Remarques et photos')),
                     PopupMenuItem(value: 'eleves', child: Text('Élèves')),
                     PopupMenuItem(
                         value: 'journal', child: Text('Journal des arrosages')),
@@ -182,7 +187,11 @@ class Accueil extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text('Parcelle'),
             )
-          : null,
+          : FloatingActionButton.extended(
+              onPressed: () => nouvelleRemarque(context, nom),
+              icon: const Icon(Icons.add_comment_outlined),
+              label: const Text('Remarque'),
+            ),
     );
   }
 }

@@ -231,7 +231,7 @@ class _Journal extends StatelessWidget {
         }
         return Column(
           children: [
-            for (final d in docs) _Observation(doc: d, admin: admin),
+            for (final d in docs) CarteObservation(doc: d, admin: admin),
           ],
         );
       },
@@ -239,10 +239,15 @@ class _Journal extends StatelessWidget {
   }
 }
 
-class _Observation extends StatelessWidget {
-  const _Observation({required this.doc, required this.admin});
+class CarteObservation extends StatelessWidget {
+  const CarteObservation(
+      {super.key,
+      required this.doc,
+      required this.admin,
+      this.afficherParcelle = false});
   final QueryDocumentSnapshot<Map<String, dynamic>> doc;
   final bool admin;
+  final bool afficherParcelle;
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +282,9 @@ class _Observation extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (afficherParcelle)
+                    Text('${o['parcelle'] ?? ''}',
+                        style: Theme.of(context).textTheme.labelLarge),
                   if (texte.isNotEmpty) Text(texte),
                   const SizedBox(height: 4),
                   Text(
@@ -418,6 +426,87 @@ class _NouvelleObservationState extends State<NouvelleObservation> {
             label: const Text('Publier'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Choix de l'endroit concerné, puis ouverture du formulaire de remarque.
+Future<void> nouvelleRemarque(BuildContext context, String eleve) async {
+  final parcelles = await db.collection('parcelles').orderBy('nom').get();
+  if (!context.mounted) return;
+  final choix = await showModalBottomSheet<List<String>>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          const ListTile(title: Text('Ta remarque concerne…')),
+          ListTile(
+            leading: const Icon(Icons.yard_outlined),
+            title: const Text('Le jardin en général'),
+            subtitle: const Text('Tuyau, clôture, réservoir, outils…'),
+            onTap: () => Navigator.pop(ctx, ['jardin', 'Jardin (général)']),
+          ),
+          for (final d in parcelles.docs)
+            ListTile(
+              leading: const Icon(Icons.grass_outlined),
+              title: Text([
+                '${d.data()['nom'] ?? ''}',
+                if ('${d.data()['culture'] ?? ''}'.isNotEmpty)
+                  '${d.data()['culture']}',
+              ].join(' · ')),
+              onTap: () =>
+                  Navigator.pop(ctx, [d.id, '${d.data()['nom'] ?? ''}']),
+            ),
+        ],
+      ),
+    ),
+  );
+  if (choix == null || !context.mounted) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => NouvelleObservation(
+          parcelleId: choix[0], parcelleNom: choix[1], eleve: eleve),
+    ),
+  );
+}
+
+/// Toutes les remarques récentes, tous endroits confondus (responsable).
+class ToutesRemarques extends StatelessWidget {
+  const ToutesRemarques({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Remarques et photos')),
+      body: StreamBuilder(
+        stream: db
+            .collection('journal')
+            .orderBy('date', descending: true)
+            .limit(100)
+            .snapshots(),
+        builder: (context, snap) {
+          if (snap.hasError) {
+            return Center(child: Text('Erreur : ${snap.error}'));
+          }
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snap.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(child: Text('Aucune remarque pour le moment.'));
+          }
+          return ListView(
+            padding: const EdgeInsets.all(8),
+            children: [
+              for (final d in docs)
+                CarteObservation(doc: d, admin: true, afficherParcelle: true),
+            ],
+          );
+        },
       ),
     );
   }
