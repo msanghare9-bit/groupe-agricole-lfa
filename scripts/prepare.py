@@ -134,3 +134,45 @@ for densite in ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]:
     if source.exists() and dossier.exists():
         shutil.copy(source, dossier / "ic_launcher.png")
 print("Icône installée.")
+
+# --- Installation des mises à jour depuis l'application ---
+extra = RACINE / "android_extra"
+kotlin = APP / "android" / "app" / "src" / "main" / "kotlin"
+cibles = list(kotlin.rglob("MainActivity.kt")) if kotlin.exists() else []
+if not cibles:
+    sys.exit("ERREUR : MainActivity.kt introuvable.")
+shutil.copy(extra / "MainActivity.kt", cibles[0])
+xml = APP / "android" / "app" / "src" / "main" / "res" / "xml"
+xml.mkdir(parents=True, exist_ok=True)
+shutil.copy(extra / "chemins_fichiers.xml", xml / "chemins_fichiers.xml")
+
+t = manifeste.read_text(encoding="utf-8")
+if "REQUEST_INSTALL_PACKAGES" not in t:
+    t = re.sub(r"(<manifest[^>]*>)",
+               r'\1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>',
+               t, count=1)
+fournisseur = """        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fichiers"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/chemins_fichiers" />
+        </provider>
+    </application>"""
+if "FileProvider" not in t:
+    t = t.replace("    </application>", fournisseur, 1)
+manifeste.write_text(t, encoding="utf-8")
+
+g = kts if kts.exists() else APP / "android" / "app" / "build.gradle"
+t = g.read_text(encoding="utf-8")
+if "androidx.core:core" not in t:
+    if g.suffix == ".kts":
+        t = t.replace('coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
+                      'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n    implementation("androidx.core:core:1.13.1")')
+    else:
+        t = t.replace("coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'",
+                      "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n    implementation 'androidx.core:core:1.13.1'")
+    g.write_text(t, encoding="utf-8")
+print("Installateur de mises à jour prêt.")

@@ -42,6 +42,12 @@ class _EditeurPublicationState extends State<EditeurPublication> {
 
   bool get _lecon => widget.collection == 'lecons';
 
+  String get _nom => switch (widget.collection) {
+        'lecons' => 'leçon',
+        'annonces' => 'annonce',
+        _ => 'actualité',
+      };
+
   @override
   void initState() {
     super.initState();
@@ -103,8 +109,14 @@ class _EditeurPublicationState extends State<EditeurPublication> {
       batch.set(col.doc(), {...donnees, 'date': Timestamp.now()});
       batch.set(
         db.collection('notifications').doc(),
-        notification('groupe',
-            _lecon ? 'Nouvelle leçon' : 'Actualité du jardin', titre),
+        notification(
+            'groupe',
+            switch (widget.collection) {
+              'lecons' => 'Nouvelle leçon',
+              'annonces' => 'Annonce',
+              _ => 'Actualité du jardin',
+            },
+            titre),
       );
       ecrire(batch.commit());
       message(context, 'Publié');
@@ -121,9 +133,7 @@ class _EditeurPublicationState extends State<EditeurPublication> {
     final nouveau = widget.id == null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(nouveau
-            ? (_lecon ? 'Nouvelle leçon' : 'Nouvelle actualité')
-            : 'Modifier'),
+        title: Text(nouveau ? 'Nouvelle $_nom' : 'Modifier'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -244,14 +254,48 @@ class ListeActualites extends StatelessWidget {
   const ListeActualites({super.key});
 
   @override
+  Widget build(BuildContext context) => const ListeFil(
+        collection: 'actualites',
+        titre: 'Actualités du jardin',
+        bouton: 'Actualité',
+        vide: 'Aucune actualité pour le moment.',
+      );
+}
+
+class ListeAnnonces extends StatelessWidget {
+  const ListeAnnonces({super.key});
+
+  @override
+  Widget build(BuildContext context) => const ListeFil(
+        collection: 'annonces',
+        titre: 'Annonces',
+        bouton: 'Annonce',
+        vide: 'Aucune annonce pour le moment.',
+      );
+}
+
+class ListeFil extends StatelessWidget {
+  const ListeFil({
+    super.key,
+    required this.collection,
+    required this.titre,
+    required this.bouton,
+    required this.vide,
+  });
+  final String collection;
+  final String titre;
+  final String bouton;
+  final String vide;
+
+  @override
   Widget build(BuildContext context) {
     final admin = estAdmin.value;
     final theme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Actualités du jardin')),
+      appBar: AppBar(title: Text(titre)),
       body: StreamBuilder(
         stream: db
-            .collection('actualites')
+            .collection(collection)
             .orderBy('date', descending: true)
             .snapshots(),
         builder: (context, snap) {
@@ -263,7 +307,7 @@ class ListeActualites extends StatelessWidget {
           }
           final docs = snap.data!.docs;
           if (docs.isEmpty) {
-            return const Center(child: Text('Aucune actualité pour le moment.'));
+            return Center(child: Text(vide));
           }
           return ListView(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
@@ -273,7 +317,7 @@ class ListeActualites extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onLongPress:
-                        admin ? () => _gerer(context, 'actualites', d) : null,
+                        admin ? () => _gerer(context, collection, d) : null,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -312,11 +356,10 @@ class ListeActualites extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) =>
-                        const EditeurPublication(collection: 'actualites')),
+                    builder: (_) => EditeurPublication(collection: collection)),
               ),
               icon: const Icon(Icons.add),
-              label: const Text('Actualité'),
+              label: Text(bouton),
             )
           : null,
     );

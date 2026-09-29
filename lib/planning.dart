@@ -226,27 +226,33 @@ class _ProchainTourState extends State<ProchainTour> {
 }
 
 class BandeauAnnonce extends StatelessWidget {
-  const BandeauAnnonce({super.key});
+  const BandeauAnnonce({super.key, required this.ouvrir});
+  final VoidCallback ouvrir;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: db.collection('config').doc('annonce').snapshots(),
+      stream: db
+          .collection('annonces')
+          .orderBy('date', descending: true)
+          .limit(1)
+          .snapshots(),
       builder: (context, snap) {
-        final d = snap.data?.data();
-        final texte = d?['texte'] as String? ?? '';
-        final ts = tsDe(d?['date']);
-        if (texte.isEmpty ||
-            ts == null ||
-            DateTime.now().difference(ts.toDate()).inDays > 7) {
+        final docs = snap.data?.docs ?? [];
+        if (docs.isEmpty) return const SizedBox.shrink();
+        final d = docs.first.data();
+        final ts = tsDe(d['date']);
+        if (ts == null || DateTime.now().difference(ts.toDate()).inDays > 7) {
           return const SizedBox.shrink();
         }
         return Card(
           color: Theme.of(context).colorScheme.secondaryContainer,
           child: ListTile(
             leading: const Icon(Icons.campaign_outlined),
-            title: Text(texte),
+            title: Text('${d['titre'] ?? ''}'),
             subtitle: Text(dateLisible(ts)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: ouvrir,
           ),
         );
       },
@@ -779,65 +785,3 @@ class _ReglagesPlanningState extends State<ReglagesPlanning> {
   }
 }
 
-// ---------- Annonce au groupe (responsable) ----------
-
-class EnvoyerAnnonce extends StatefulWidget {
-  const EnvoyerAnnonce({super.key});
-
-  @override
-  State<EnvoyerAnnonce> createState() => _EnvoyerAnnonceState();
-}
-
-class _EnvoyerAnnonceState extends State<EnvoyerAnnonce> {
-  final _texte = TextEditingController();
-
-  @override
-  void dispose() {
-    _texte.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Annonce au groupe')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _texte,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Message',
-              hintText: 'Ex. Réunion du groupe jeudi à 16 h au jardin.',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "L'annonce apparaît aussitôt dans l'application et arrive en notification sur les téléphones dans la demi-heure.",
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () {
-              final t = _texte.text.trim();
-              if (t.isEmpty) return;
-              final batch = db.batch();
-              batch.set(db.collection('notifications').doc(),
-                  notification('groupe', 'Groupe Agricole', t));
-              batch.set(db.collection('config').doc('annonce'),
-                  {'texte': t, 'date': Timestamp.now()});
-              ecrire(batch.commit());
-              message(context, 'Annonce envoyée');
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.send),
-            label: const Text('Envoyer'),
-          ),
-        ],
-      ),
-    );
-  }
-}

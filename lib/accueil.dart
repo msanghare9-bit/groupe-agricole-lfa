@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'admin.dart';
 import 'contenus.dart';
 import 'fiche.dart';
+import 'miseajour.dart';
 import 'outils.dart';
 import 'planning.dart';
 
@@ -38,8 +38,6 @@ class Accueil extends StatelessWidget {
         page = const GestionEleves();
       case 'journal':
         page = const JournalArrosages();
-      case 'maj':
-        page = const PublierMiseAJour();
       case 'planning':
         page = PagePlanning(nom: nom);
       case 'binomes':
@@ -47,7 +45,7 @@ class Accueil extends StatelessWidget {
       case 'demandes':
         page = const DemandesRemplacement();
       case 'annonce':
-        page = const EnvoyerAnnonce();
+        page = const ListeAnnonces();
       case 'reglages':
         page = const ReglagesPlanning();
       case 'remarques':
@@ -79,8 +77,7 @@ class Accueil extends StatelessWidget {
                     PopupMenuItem(
                         value: 'demandes',
                         child: Text('Demandes de remplacement')),
-                    PopupMenuItem(
-                        value: 'annonce', child: Text('Annonce au groupe')),
+                    PopupMenuItem(value: 'annonce', child: Text('Annonces')),
                     PopupMenuItem(
                         value: 'reglages',
                         child: Text('Réglages du planning')),
@@ -90,8 +87,6 @@ class Accueil extends StatelessWidget {
                     PopupMenuItem(value: 'eleves', child: Text('Élèves')),
                     PopupMenuItem(
                         value: 'journal', child: Text('Journal des arrosages')),
-                    PopupMenuItem(
-                        value: 'maj', child: Text("Mise à jour de l'application")),
                     PopupMenuItem(
                         value: 'deconnexion', child: Text('Se déconnecter')),
                   ]
@@ -128,7 +123,12 @@ class Accueil extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             children: [
               const BandeauMiseAJour(),
-              const BandeauAnnonce(),
+              BandeauAnnonce(
+                ouvrir: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ListeAnnonces()),
+                ),
+              ),
               if (!admin) ProchainTour(nom: nom),
               const SizedBox(height: 8),
               Text(admin ? 'Espace responsable' : 'Bonjour $nom',
@@ -182,6 +182,14 @@ class Accueil extends StatelessWidget {
                       icone: Icons.menu_book_outlined,
                       titre: 'Leçons',
                       page: const ListeLecons(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _Raccourci(
+                      icone: Icons.campaign_outlined,
+                      titre: 'Annonces',
+                      page: const ListeAnnonces(),
                     ),
                   ),
                 ],
@@ -238,8 +246,7 @@ class BandeauMiseAJour extends StatelessWidget {
             leading: const Icon(Icons.system_update_outlined),
             title: const Text('Mise à jour disponible'),
             subtitle: const Text('Touche pour installer la nouvelle version.'),
-            onTap: () => launchUrl(Uri.parse(lien),
-                mode: LaunchMode.externalApplication),
+            onTap: () => installerMiseAJour(context, lien),
           ),
         );
       },
@@ -262,12 +269,12 @@ class _Raccourci extends StatelessWidget {
         onTap: () =>
             Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-          child: Row(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+          child: Column(
             children: [
               Icon(icone),
-              const SizedBox(width: 8),
-              Expanded(child: Text(titre)),
+              const SizedBox(height: 6),
+              Text(titre, textAlign: TextAlign.center),
             ],
           ),
         ),

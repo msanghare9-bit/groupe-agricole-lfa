@@ -14,6 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Numéro de version
+        run: echo "NUMERO=$((GITHUB_RUN_NUMBER + 100))" >> $GITHUB_ENV
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -45,7 +48,7 @@ jobs:
         run: |
           set -o pipefail
           flutter pub get 2>&1 | tee ../build.log
-          flutter build apk --release 2>&1 | tee -a ../build.log
+          flutter build apk --release --build-number=$NUMERO 2>&1 | tee -a ../build.log
 
       - name: Enregistrer le journal en cas d'erreur
         if: failure()
@@ -63,3 +66,14 @@ jobs:
         with:
           name: groupe-agricole-apk
           path: app_build/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publier la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          cp app_build/build/app/outputs/flutter-apk/app-release.apk LFARM.apk
+          gh release create "v$NUMERO" LFARM.apk --title "Version $NUMERO" --notes "Version publiée automatiquement." --latest \
+            || gh release upload "v$NUMERO" LFARM.apk --clobber
+          pip install -q google-auth requests
+          python3 scripts/publier_version.py
