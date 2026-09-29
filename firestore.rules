@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function connecte() { return request.auth != null; }
+    function responsable() {
+      return connecte() && request.auth.token.email == "__EMAIL__";
+    }
+    match /eleves/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /parcelles/{id} {
+      allow read: if connecte();
+      allow create, delete: if responsable();
+      allow update: if responsable() || (connecte() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['dernierArrosage', 'dernierPar', 'etape', 'etapes']));
+    }
+    match /arrosages/{id} {
+      allow read, create: if connecte();
+      allow update, delete: if responsable();
+    }
+    match /journal/{id} {
+      allow read, create: if connecte();
+      allow update, delete: if responsable();
+    }
+    match /remplacements/{id} {
+      allow read: if connecte();
+      allow create: if connecte() && request.resource.data.statut == 'demande';
+      allow update, delete: if responsable();
+    }
+    match /config/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /binomes/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /actualites/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /lecons/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /annonces/{id} {
+      allow read: if connecte();
+      allow write: if responsable();
+    }
+    match /notifications/{id} {
+      allow read, write: if responsable();
+    }
+  }
+}

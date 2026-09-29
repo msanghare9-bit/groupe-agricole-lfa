@@ -1,0 +1,38 @@
+name: Publier les règles Firebase
+
+on:
+  push:
+    branches: [main]
+    paths: [firestore.rules]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q google-auth requests
+      - name: Publier
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          set -o pipefail
+          python3 scripts/deployer_regles.py 2>&1 | tee regles.log
+      - name: Enregistrer le journal en cas d'erreur
+        if: failure()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan journaux
+          git rm -rfq --cached .
+          cp regles.log erreur.log || echo "pas de journal" > erreur.log
+          git add erreur.log
+          git commit -qm "Journal d'erreur (règles)"
+          git push -f origin journaux
