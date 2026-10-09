@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'admin.dart';
@@ -234,7 +235,7 @@ class BandeauMiseAJour extends StatelessWidget {
       stream: db.collection('config').doc('app').snapshots(),
       builder: (context, snap) {
         final d = snap.data?.data();
-        if (d == null) return const SizedBox.shrink();
+        if (d == null || kIsWeb) return const SizedBox.shrink();
         final version = (d['version'] as num?)?.toInt() ?? 0;
         final lien = d['lien'] as String? ?? '';
         if (version <= versionLocale || lien.isEmpty) {

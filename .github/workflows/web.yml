@@ -1,0 +1,73 @@
+name: Publier la version web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Préparer
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          set -o pipefail
+          pip install -q google-auth requests pillow
+          flutter create --org sn.lfakebemer --project-name groupeagricole --platforms web --no-pub app_web > /dev/null
+          rm -rf app_web/lib app_web/test
+          cp -r lib app_web/lib
+          cp pubspec.yaml app_web/pubspec.yaml
+          python3 scripts/config_web.py 2>&1 | tee web.log
+      - name: Construire et publier sur Firebase Hosting
+        id: firebase
+        continue-on-error: true
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          set -o pipefail
+          cd app_web
+          flutter pub get 2>&1 | tee -a ../web.log
+          flutter build web --release --base-href / 2>&1 | tee -a ../web.log
+          echo "$FIREBASE_SA" > /tmp/sa.json
+          echo '{"hosting":{"public":"build/web","ignore":["firebase.json"],"rewrites":[{"source":"**","destination":"/index.html"}]}}' > firebase.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json npx -y firebase-tools@latest deploy --only hosting --project lfarm-1e4fe --non-interactive 2>&1 | tee -a ../web.log
+          echo "SITE: https://lfarm-1e4fe.web.app" | tee -a ../web.log
+      - name: Sinon, publier sur GitHub Pages
+        if: steps.firebase.outcome == 'failure'
+        run: |
+          set -o pipefail
+          cd app_web
+          flutter build web --release --base-href /groupe-agricole-lfa/ 2>&1 | tee -a ../web.log
+          cd build/web
+          touch .nojekyll
+          git init -q -b gh-pages
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          git add -A && git commit -qm "Version web"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
+          echo "SITE: https://msanghare9-bit.github.io/groupe-agricole-lfa/" | tee -a ../../../web.log
+      - name: Enregistrer le journal
+        if: always()
+        run: |
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          tail -n 200 web.log > journal-web.log || echo "pas de journal" > journal-web.log
+          echo "firebase=${{ steps.firebase.outcome }}" >> journal-web.log
+          git checkout -q --orphan journaux-web
+          git rm -rfq --cached .
+          git add journal-web.log
+          git commit -qm "Journal web"
+          git push -qf origin journaux-web

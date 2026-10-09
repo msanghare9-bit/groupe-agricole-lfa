@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,7 @@ const _details = NotificationDetails(
 );
 
 Future<void> initNotifications() async {
+  if (kIsWeb) return;
   try {
     tzdata.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Africa/Dakar'));
@@ -53,6 +55,7 @@ String sujetEleve(String nom) {
 
 /// Abonne le téléphone aux messages du groupe et à ceux de l'élève choisi.
 Future<void> abonner(String? nom) async {
+  if (kIsWeb) return;
   try {
     final m = FirebaseMessaging.instance;
     final prefs = await SharedPreferences.getInstance();
@@ -73,6 +76,7 @@ Future<void> abonner(String? nom) async {
 
 /// Demande une seule fois les autorisations nécessaires aux rappels.
 Future<void> demanderAutorisations(BuildContext context) async {
+  if (kIsWeb) return;
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool('autorisations') == true) return;
   if (!context.mounted) return;
@@ -118,6 +122,7 @@ Future<void> _programmer(int id, DateTime quand, String titre, String texte) {
 }
 
 Future<void> annulerRappels() async {
+  if (kIsWeb) return;
   try {
     await _plugin.cancelAll();
   } catch (_) {}
