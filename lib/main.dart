@@ -73,10 +73,10 @@ class _DemarrageState extends State<Demarrage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) demanderAutorisations(context);
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _erreur =
-          'La première connexion demande internet. Active les données puis réessaie.');
+          'Connexion impossible. Vérifie internet puis réessaie.\n\n(Détail : $e)');
     }
   }
 
