@@ -1,7 +1,7 @@
 name: groupeagricole
 description: Suivi des plantes et des arrosages du Groupe Agricole du LFA Kébémer.
 publish_to: 'none'
-version: 0.4.2+7
+version: 0.5.0+8
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -16,6 +16,8 @@ dependencies:
   image_picker: any
   package_info_plus: any
   url_launcher: any
+  google_fonts: any
+  http: any
   firebase_messaging: any
   flutter_local_notifications: ^19.0.0
   timezone: ^0.10.0

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'notifs.dart';
 import 'outils.dart';
+import 'theme.dart';
 
 // ---------- Dates ----------
 
@@ -147,9 +148,30 @@ class PlanningBuilder extends StatelessWidget {
 
 // ---------- Prochain tour (accueil élève) et rappels ----------
 
+String initiales(String nom) {
+  final m = nom.trim().split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
+  if (m.isEmpty) return '?';
+  if (m.length == 1) return m[0].substring(0, m[0].length < 2 ? m[0].length : 2).toUpperCase();
+  return (m[0][0] + m[1][0]).toUpperCase();
+}
+
+String momentLisible(Creneau c) {
+  final auj = DateTime.now();
+  final j = DateTime(c.debut.year, c.debut.month, c.debut.day);
+  final d = j.difference(DateTime(auj.year, auj.month, auj.day)).inDays;
+  final quand = d == 0
+      ? (c.cle == 'matin' ? 'Ce matin' : 'Ce soir')
+      : d == 1
+          ? (c.cle == 'matin' ? 'Demain matin' : 'Demain soir')
+          : '${jourLisible(c.debut)[0].toUpperCase()}${jourLisible(c.debut).substring(1)} ${c.cle}';
+  return '$quand à ${heureLisible(c.debut)}';
+}
+
 class ProchainTour extends StatefulWidget {
-  const ProchainTour({super.key, required this.nom});
+  const ProchainTour({super.key, required this.nom, this.admin = false, this.onArroser});
   final String nom;
+  final bool admin;
+  final VoidCallback? onArroser;
 
   @override
   State<ProchainTour> createState() => _ProchainTourState();
@@ -168,12 +190,10 @@ class _ProchainTourState extends State<ProchainTour> {
             isGreaterThan: Timestamp.fromDate(
                 DateTime.now().subtract(const Duration(days: 3))))
         .snapshots();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) demanderAutorisations(context);
-    });
   }
 
   void _planifier(Planning? p, List<Map<String, dynamic>> recents) {
+    if (widget.admin) return;
     final sig =
         '${widget.nom}|${p?.signature}|${recents.map((a) => '${a['eleve']}${tsDe(a['date'])?.seconds}').join(',')}';
     if (sig == _signature) return;
@@ -187,37 +207,136 @@ class _ProchainTourState extends State<ProchainTour> {
     });
   }
 
+  Widget _carte(BuildContext context, String etiquette, String titre,
+      List<String> membres, String detail) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 3,
+      shadowColor: Lf.vert.withValues(alpha: 0.18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PagePlanning(nom: widget.nom)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(etiquette,
+                        style: const TextStyle(
+                            fontSize: 12, color: Lf.taupe, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(titre, style: Lf.serif(size: 19)),
+                    if (membres.isNotEmpty || detail.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (membres.isNotEmpty) ...[
+                            SizedBox(
+                              width: 26 + 18.0 * (membres.length.clamp(1, 3) - 1),
+                              height: 26,
+                              child: Stack(
+                                children: [
+                                  for (var i = 0; i < membres.length && i < 3; i++)
+                                    Positioned(
+                                      left: 18.0 * i,
+                                      child: Container(
+                                        width: 26,
+                                        height: 26,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: i.isEven ? Lf.vertClair : Lf.orangeClair,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                        ),
+                                        child: Text(initiales(membres[i]),
+                                            style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                                color: i.isEven ? Lf.vert : Lf.orangeFonce)),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: Text(detail,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13, color: Color(0xFF6B6455))),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (widget.onArroser != null) ...[
+                const SizedBox(width: 12),
+                Material(
+                  color: Lf.orange,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: widget.onArroser,
+                    child: const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: Icon(Icons.water_drop, color: Colors.white, size: 26),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PlanningBuilder(
       builder: (context, p, charge) => StreamBuilder(
         stream: _recents,
         builder: (context, snap) {
-          if (!charge || !snap.hasData) return const SizedBox.shrink();
+          if (!charge || !snap.hasData) {
+            return _carte(context, 'Emploi du temps', 'Chargement…', const [], '');
+          }
           _planifier(p, snap.data!.docs.map((d) => d.data()).toList());
-          if (p == null) return const SizedBox.shrink();
+          if (p == null) {
+            return _carte(context, 'Emploi du temps', 'Binômes à former',
+                const [], widget.admin ? 'Menu Moi > Binômes' : 'Le responsable prépare le planning');
+          }
           final maintenant = DateTime.now();
           final lundi = lundiDe(maintenant);
           final prochain = [
             ...p.semaine(lundi),
             ...p.semaine(lundi.add(const Duration(days: 7))),
           ].where((c) =>
-              c.membres.contains(widget.nom) &&
+              (widget.admin || c.membres.contains(widget.nom)) &&
               c.debut.add(const Duration(hours: 2)).isAfter(maintenant));
-          if (prochain.isEmpty) return const SizedBox.shrink();
+          if (prochain.isEmpty) {
+            return _carte(context, 'Ton prochain tour', 'Aucun tour prévu', const [], '');
+          }
           final c = prochain.first;
-          final autres = c.membres.where((m) => m != widget.nom).join(' et ');
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: const Text('Ton prochain tour'),
-              subtitle: Text(
-                  '${jourLisible(c.debut)} ${c.cle} à ${heureLisible(c.debut)}${autres.isEmpty ? '' : '\navec $autres'}'),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => PagePlanning(nom: widget.nom)),
-              ),
-            ),
+          final autres = widget.admin
+              ? c.membres
+              : c.membres.where((m) => m != widget.nom).toList();
+          final membres = widget.admin ? c.membres : [widget.nom, ...autres];
+          return _carte(
+            context,
+            widget.admin ? 'Prochain arrosage' : 'Ton prochain tour',
+            momentLisible(c),
+            membres,
+            autres.isEmpty ? 'Seul(e) ce jour-là' : (widget.admin ? autres.join(' et ') : 'Avec ${autres.join(' et ')}'),
           );
         },
       ),
@@ -246,11 +365,16 @@ class BandeauAnnonce extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return Card(
-          color: Theme.of(context).colorScheme.secondaryContainer,
+          color: Lf.orangeClair,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: Lf.orange.withValues(alpha: 0.35)),
+          ),
           child: ListTile(
-            leading: const Icon(Icons.campaign_outlined),
-            title: Text('${d['titre'] ?? ''}'),
-            subtitle: Text(dateLisible(ts)),
+            leading: const Icon(Icons.campaign_outlined, color: Lf.orangeFonce),
+            title: Text('${d['titre'] ?? ''}',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text('Annonce · ${dateLisible(ts)}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: ouvrir,
           ),
