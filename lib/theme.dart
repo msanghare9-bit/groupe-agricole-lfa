@@ -44,7 +44,8 @@ ThemeData themeLfarm() {
     outlineVariant: Lf.bord,
     error: Lf.rouge,
   );
-  final texte = GoogleFonts.sourceSans3TextTheme(base.textTheme).apply(
+  final texte = base.textTheme.apply(
+    fontFamily: GoogleFonts.sourceSans3().fontFamily,
     bodyColor: Lf.encre,
     displayColor: Lf.encre,
   );
