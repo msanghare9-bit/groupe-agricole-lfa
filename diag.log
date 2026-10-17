@@ -1,0 +1,11 @@
+CONFIG signIn: {"email": {"enabled": true, "passwordRequired": true}, "anonymous": {"enabled": true}, "hashConfig": {"algorithm": "SCRYPT", "signerKey": "xn+W0vCWO71Tw0XpsGQ5G8rhrUpDZBPu0IUXRnvwzWj6jIAn/dBlYXhtoUntnzZwgsH9jDDTHPvrcBVXMP4KdA==", "saltSeparator": "Bw==", "rounds": 8, "memoryCost": 14}}
+CONFIG domaines: ['localhost', 'lfarm-1e4fe.firebaseapp.com', 'lfarm-1e4fe.web.app', 'msanghare9-bit.github.io']
+CONFIG autres clés: ['name', 'signIn', 'notification', 'quota', 'monitoring', 'multiTenant', 'authorizedDomains', 'subtype', 'client', 'mfa', 'blockingFunctions', 'smsRegionConfig', 'emailPrivacyConfig', 'mobileLinksConfig', 'defaultHostingSite']
+SIGNUP android dTX7sg 200 {
+  "kind": "identitytoolkit#SignupNewUserResponse",
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkwNGIwZjkxYmU2ZWIwODY3ZGFiYmFhYjU4N2RmYzJlMzNmMDBhMjQiLCJ0eXAiOiJKV1QifQ.eyJwcm92aWRlcl9pZCI6ImFub255bW91cyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9sZmFybS0xZTRmZSIsImF1ZCI6ImxmYXJtLTFlNGZlIiwiYXV0aF90aW1lIjoxNzkyMjMxMzM0LCJ1c2VyX2lkIjoiQnoydVRDOFVzWVlZamxNSEozQ1h6NGQ0aEU3MyIsInN1YiI6IkJ6Mn
+SIGNUP web 2LhJaY 200 {
+  "kind": "identitytoolkit#SignupNewUserResponse",
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkwNGIwZjkxYmU2ZWIwODY3ZGFiYmFhYjU4N2RmYzJlMzNmMDBhMjQiLCJ0eXAiOiJKV1QifQ.eyJwcm92aWRlcl9pZCI6ImFub255bW91cyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9sZmFybS0xZTRmZSIsImF1ZCI6ImxmYXJtLTFlNGZlIiwiYXV0aF90aW1lIjoxNzkyMjMxMzM1LCJ1c2VyX2lkIjoiYmRVOWRKUFNPNGRCaklMdVRBdFl1cjhYYW05MiIsInN1YiI6ImJkVT
+KEYS 403
+SERVICES 403 []
